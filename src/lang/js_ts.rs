@@ -29,6 +29,7 @@ impl LanguageExt for specta_typescript::Typescript {
                     exporter,
                     &cfg,
                     false,
+                    RuntimeSections::ALL,
                     if cfg.typed_error_impl.is_empty() {
                         match cfg.error_handling {
                             ErrorHandlingMode::DataError => DATA_ERROR_IMPL_TS,
@@ -63,6 +64,7 @@ impl LanguageExt for specta_typescript::JSDoc {
                     exporter,
                     &cfg,
                     true,
+                    RuntimeSections::ALL,
                     if cfg.typed_error_impl.is_empty() {
                         match cfg.error_handling {
                             ErrorHandlingMode::DataError => DATA_ERROR_IMPL_JS,
@@ -82,6 +84,91 @@ impl LanguageExt for specta_typescript::JSDoc {
     }
 }
 
+/// Which parts of [`runtime`]'s output to render.
+///
+/// Building block for external per-mount exporters (TAP's bindings shard
+/// exporter, issue #7112) that need one mount's commands/events without
+/// paying for — and having to string-split away — that mount's own local
+/// constants/types/runtime-helper closure, when a shared union export
+/// already owns those sections for the recomposed API surface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuntimeSections {
+    /// Render the `/** Commands */ export const commands = { ... }` block.
+    pub commands: bool,
+    /// Render the `/** Events */ export const events = { ... }` block.
+    pub events: bool,
+    /// Render the `/* Constants */` block.
+    pub constants: bool,
+    /// Render the `/* Types */` block (the referenced type registry).
+    pub types: bool,
+    /// Render the `/* Tauri Specta runtime */` block (typed-error / channel
+    /// / `makeEvent` helper implementations).
+    pub runtime_helpers: bool,
+}
+
+impl RuntimeSections {
+    /// Every section — matches the committed single-file exporters exactly.
+    pub const ALL: Self = Self {
+        commands: true,
+        events: true,
+        constants: true,
+        types: true,
+        runtime_helpers: true,
+    };
+
+    /// Commands and events only. No constants, types, or runtime helpers —
+    /// for per-mount fragment exporters where a shared union export already
+    /// renders those sections once.
+    pub const COMMANDS_AND_EVENTS: Self = Self {
+        commands: true,
+        events: true,
+        constants: false,
+        types: false,
+        runtime_helpers: false,
+    };
+}
+
+/// Export `cfg` through `ts_config`, restricted to `sections`.
+///
+/// The non-selective counterpart of [`LanguageExt::export`] for
+/// [`specta_typescript::Typescript`]: same pipeline (format types, build the
+/// framework exporter, render the runtime block, write to `path`), but the
+/// caller picks which of [`RuntimeSections`]'s blocks actually render.
+pub fn export_sections(
+    cfg: &BuilderConfiguration,
+    ts_config: specta_typescript::Typescript,
+    path: &Path,
+    sections: RuntimeSections,
+) -> Result<(), Error> {
+    let cfg = cfg.clone();
+    let types = hide_unused_std_result_type(&cfg, cfg.types.clone());
+    let format = SpectaFormat::new(&cfg);
+    let typed_error_impl: Cow<'static, str> = if cfg.typed_error_impl.is_empty() {
+        Cow::Borrowed(match cfg.error_handling {
+            ErrorHandlingMode::DataError => DATA_ERROR_IMPL_TS,
+            ErrorHandlingMode::Throw | ErrorHandlingMode::Result => TYPED_ERROR_IMPL_TS,
+        })
+    } else {
+        cfg.typed_error_impl.clone()
+    };
+
+    Exporter::from(ts_config)
+        .framework_prelude(FRAMEWORK_HEADER)
+        .framework_runtime(move |exporter| {
+            runtime(
+                exporter,
+                &cfg,
+                false,
+                sections,
+                &typed_error_impl,
+                TYPED_ERROR_ASSERTION_TS,
+                MAKE_EVENT_IMPL_TS,
+                MAP_CHANNEL_IMPL_TS,
+            )
+        })
+        .export_to(path, &types, format)
+}
+
 /// Render the framework runtime section (imports, `commands`, `events`,
 /// constants, user types, and runtime helpers) for one builder
 /// configuration. Public so external exporters can emit per-mount bindings
@@ -90,13 +177,14 @@ pub fn runtime(
     mut exporter: FrameworkExporter,
     cfg: &BuilderConfiguration,
     jsdoc: bool,
+    sections: RuntimeSections,
     typed_error_impl: &str,
     typed_error_assertion: &str,
     make_event_impl: &str,
     map_channel_impl: &str,
 ) -> Result<Cow<'static, str>, Error> {
-    let enabled_commands = !cfg.commands.is_empty();
-    let enabled_events = !cfg.events.is_empty();
+    let enabled_commands = sections.commands && !cfg.commands.is_empty();
+    let enabled_events = sections.events && !cfg.events.is_empty();
     let semantic_types_runtime_types = semantic_types_runtime_types(cfg)?;
     let semantic_types_runtime_types = semantic_types_runtime_types
         .as_ref()
@@ -638,7 +726,7 @@ pub fn runtime(
     }
 
     // Constants
-    if !cfg.constants.is_empty() {
+    if sections.constants && !cfg.constants.is_empty() {
         out.push_str("\n/* Constants */");
 
         let mut constants = cfg.constants.iter().collect::<Vec<_>>();
@@ -670,17 +758,19 @@ pub fn runtime(
     }
 
     // User types
-    let types = exporter.render_types()?;
-    if !types.is_empty() {
-        out.push_str("\n/* Types */");
-        if !types.starts_with('\n') {
-            out.push('\n');
+    if sections.types {
+        let types = exporter.render_types()?;
+        if !types.is_empty() {
+            out.push_str("\n/* Types */");
+            if !types.starts_with('\n') {
+                out.push('\n');
+            }
+            out.push_str(&types);
         }
-        out.push_str(&types);
     }
 
     // Runtime
-    if has_typed_error || enabled_events || is_channel_transform_used {
+    if sections.runtime_helpers && (has_typed_error || enabled_events || is_channel_transform_used) {
         out.push_str("\n/* Tauri Specta runtime */\n");
 
         if is_channel_transform_used {
@@ -1311,6 +1401,19 @@ mod tests {
 
     use crate::{Builder, ErrorHandlingMode, collect_commands};
 
+    use super::RuntimeSections;
+
+    #[derive(Serialize, Deserialize, Type)]
+    struct SectionedPayload {
+        value: String,
+    }
+
+    #[tauri::command]
+    #[specta]
+    fn sectioned_command(payload: SectionedPayload) -> SectionedPayload {
+        payload
+    }
+
     #[tauri::command]
     #[specta]
     fn nullable_result() -> Result<Option<String>, String> {
@@ -1587,5 +1690,46 @@ mod tests {
         assert!(err.to_string().contains(
             "DataError mode requires a non-nullable command error type because null marks a successful result"
         ));
+    }
+
+    #[test]
+    fn export_sections_restricts_output_to_selected_blocks() {
+        let output_dir = std::env::temp_dir().join(format!(
+            "tauri-specta-sections-test-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&output_dir).expect("failed to create test output directory");
+
+        let builder = Builder::<tauri::Wry>::new()
+            .commands(collect_commands![sectioned_command])
+            .constant("SECTIONS_TEST_CONSTANT", 1);
+
+        let all_path = output_dir.join("all.ts");
+        builder
+            .export_sections(Typescript::default(), &all_path, RuntimeSections::ALL)
+            .expect("full-section export should succeed");
+        let all = fs::read_to_string(&all_path).expect("failed to read full-section export");
+        assert!(all.contains("/** Commands */"), "commands section present");
+        assert!(all.contains("/* Constants */"), "constants section present");
+        assert!(all.contains("/* Types */"), "types section present");
+
+        let partial_path = output_dir.join("partial.ts");
+        builder
+            .export_sections(
+                Typescript::default(),
+                &partial_path,
+                RuntimeSections::COMMANDS_AND_EVENTS,
+            )
+            .expect("commands-and-events export should succeed");
+        let partial = fs::read_to_string(&partial_path).expect("failed to read partial export");
+        assert!(partial.contains("/** Commands */"), "commands section present");
+        assert!(!partial.contains("/* Constants */"), "constants section suppressed");
+        assert!(!partial.contains("/* Types */"), "types section suppressed");
+        assert!(
+            !partial.contains("/* Tauri Specta runtime */"),
+            "runtime helper section suppressed"
+        );
+
+        fs::remove_dir_all(&output_dir).expect("failed to remove test output directory");
     }
 }

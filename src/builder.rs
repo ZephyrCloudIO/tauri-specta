@@ -425,4 +425,23 @@ impl<R: Runtime> Builder<R> {
     ) -> Result<(), L::Error> {
         language.export(&self.cfg, path.as_ref())
     }
+
+    /// Export bindings restricted to a selected subset of framework runtime
+    /// sections. See [`js_ts::RuntimeSections`](crate::js_ts::RuntimeSections).
+    ///
+    /// Building block for external per-mount exporters (TAP's bindings
+    /// shard exporter, issue #7112) that need one mount's commands/events
+    /// without paying for — and having to string-split away — that mount's
+    /// own local constants/types/runtime-helper closure, when a shared
+    /// union export already owns those sections for the recomposed API
+    /// surface.
+    #[cfg(any(feature = "javascript", feature = "typescript"))]
+    pub fn export_sections(
+        &self,
+        ts_config: specta_typescript::Typescript,
+        path: impl AsRef<Path>,
+        sections: crate::js_ts::RuntimeSections,
+    ) -> Result<(), specta_typescript::Error> {
+        crate::js_ts::export_sections(&self.cfg, ts_config, path.as_ref(), sections)
+    }
 }

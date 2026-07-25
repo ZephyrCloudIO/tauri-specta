@@ -351,6 +351,17 @@ impl<R: Runtime> Builder<R> {
         self
     }
 
+    /// Read access to the assembled builder configuration.
+    ///
+    /// `BuilderConfiguration` is `#[non_exhaustive]`, so downstream exporters
+    /// (for example per-mount shard generators that drive
+    /// [`lang::js_ts::runtime`](crate::lang::js_ts::runtime) directly) cannot
+    /// construct one; this getter is their only way to reach the collected
+    /// commands, events, and type registry.
+    pub fn configuration(&self) -> &BuilderConfiguration {
+        &self.cfg
+    }
+
     /// The Tauri invoke handler to trigger commands registered with the builder.
     pub fn invoke_handler(&self) -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
         let commands = self.commands.0.clone();

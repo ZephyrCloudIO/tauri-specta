@@ -351,6 +351,17 @@ impl<R: Runtime> Builder<R> {
         self
     }
 
+    /// Read access to the assembled builder configuration.
+    ///
+    /// `BuilderConfiguration` is `#[non_exhaustive]`, so downstream exporters
+    /// (for example per-mount shard generators that drive
+    /// [`lang::js_ts::runtime`](crate::lang::js_ts::runtime) directly) cannot
+    /// construct one; this getter is their only way to reach the collected
+    /// commands, events, and type registry.
+    pub fn configuration(&self) -> &BuilderConfiguration {
+        &self.cfg
+    }
+
     /// The Tauri invoke handler to trigger commands registered with the builder.
     pub fn invoke_handler(&self) -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
         let commands = self.commands.0.clone();
@@ -413,5 +424,24 @@ impl<R: Runtime> Builder<R> {
         path: impl AsRef<Path>,
     ) -> Result<(), L::Error> {
         language.export(&self.cfg, path.as_ref())
+    }
+
+    /// Export bindings restricted to a selected subset of framework runtime
+    /// sections. See [`js_ts::RuntimeSections`](crate::js_ts::RuntimeSections).
+    ///
+    /// Building block for external per-mount exporters (TAP's bindings
+    /// shard exporter, issue #7112) that need one mount's commands/events
+    /// without paying for — and having to string-split away — that mount's
+    /// own local constants/types/runtime-helper closure, when a shared
+    /// union export already owns those sections for the recomposed API
+    /// surface.
+    #[cfg(any(feature = "javascript", feature = "typescript"))]
+    pub fn export_sections(
+        &self,
+        ts_config: specta_typescript::Typescript,
+        path: impl AsRef<Path>,
+        sections: crate::js_ts::RuntimeSections,
+    ) -> Result<(), specta_typescript::Error> {
+        crate::js_ts::export_sections(&self.cfg, ts_config, path.as_ref(), sections)
     }
 }

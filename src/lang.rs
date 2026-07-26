@@ -16,4 +16,4 @@ pub trait LanguageExt {
 }
 
 #[cfg(any(feature = "javascript", feature = "typescript"))]
-mod js_ts;
+pub mod js_ts;

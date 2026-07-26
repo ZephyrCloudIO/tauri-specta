@@ -263,6 +263,12 @@ pub use casing::Casing;
 pub use commands::Commands;
 pub use event::{Event, Events, TypedEvent};
 pub use lang::LanguageExt;
+// `lang` itself stays private; `js_ts` is re-exported directly so external
+// per-mount exporters (TAP's bindings shard exporter, issue #7112) can reach
+// `js_ts::RuntimeSections` / `js_ts::runtime` / `js_ts::export_sections`
+// without a `pub mod lang` that would also expose unrelated internals.
+#[cfg(any(feature = "javascript", feature = "typescript"))]
+pub use lang::js_ts;
 
 /// Implements the [`Event`](trait@crate::Event) trait for a struct.
 ///

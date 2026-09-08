@@ -770,7 +770,8 @@ pub fn runtime(
     }
 
     // Runtime
-    if sections.runtime_helpers && (has_typed_error || enabled_events || is_channel_transform_used) {
+    if sections.runtime_helpers && (has_typed_error || enabled_events || is_channel_transform_used)
+    {
         out.push_str("\n/* Tauri Specta runtime */\n");
 
         if is_channel_transform_used {
@@ -1694,10 +1695,8 @@ mod tests {
 
     #[test]
     fn export_sections_restricts_output_to_selected_blocks() {
-        let output_dir = std::env::temp_dir().join(format!(
-            "tauri-specta-sections-test-{}",
-            std::process::id()
-        ));
+        let output_dir =
+            std::env::temp_dir().join(format!("tauri-specta-sections-test-{}", std::process::id()));
         fs::create_dir_all(&output_dir).expect("failed to create test output directory");
 
         let builder = Builder::<tauri::Wry>::new()
@@ -1722,8 +1721,14 @@ mod tests {
             )
             .expect("commands-and-events export should succeed");
         let partial = fs::read_to_string(&partial_path).expect("failed to read partial export");
-        assert!(partial.contains("/** Commands */"), "commands section present");
-        assert!(!partial.contains("/* Constants */"), "constants section suppressed");
+        assert!(
+            partial.contains("/** Commands */"),
+            "commands section present"
+        );
+        assert!(
+            !partial.contains("/* Constants */"),
+            "constants section suppressed"
+        );
         assert!(!partial.contains("/* Types */"), "types section suppressed");
         assert!(
             !partial.contains("/* Tauri Specta runtime */"),

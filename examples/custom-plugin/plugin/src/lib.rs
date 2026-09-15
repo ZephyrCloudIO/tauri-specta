@@ -50,7 +50,7 @@ mod test {
 
     #[test]
     fn export_types() {
-        builder::<tauri::Wry>()
+        builder::<tauri::DynRuntime>()
             .export(specta_typescript::Typescript::default(), "./bindings.ts")
             .expect("failed to export specta types");
     }

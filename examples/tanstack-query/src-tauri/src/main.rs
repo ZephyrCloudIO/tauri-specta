@@ -171,7 +171,7 @@ fn main() {
             async_hello_world,
             has_error,
             nested::some_struct,
-            generic::<tauri::Wry>,
+            generic::<tauri::DynRuntime>,
             deprecated,
             with_channel,
             phase_specific_rename,
@@ -238,6 +238,7 @@ fn main() {
 
     #[cfg(debug_assertions)]
     tauri::Builder::default()
+        .runtime(tauri_runtime_wry::Wry::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);

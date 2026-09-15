@@ -56,6 +56,8 @@
 //!         .expect("Failed to export typescript bindings");
 //!
 //!     tauri::Builder::default()
+//!         // Tauri does not bundle a webview runtime, so select one
+//!         .runtime(tauri_runtime_wry::Wry::default())
 //!         // and finally tell Tauri how to invoke them
 //!         .invoke_handler(builder.invoke_handler())
 //!         .setup(move |app| {
@@ -77,7 +79,7 @@
 //! ```rust
 //! use specta_typescript::JSDoc;
 //!
-//! let mut builder = tauri_specta::Builder::<tauri::Wry>::new();
+//! let mut builder = tauri_specta::Builder::<tauri::DynRuntime>::new();
 //!
 //! #[cfg(debug_assertions)]
 //! builder
@@ -106,7 +108,7 @@
 //! }
 //!
 //! // Call `typ()` as much as you want.
-//! let mut builder = tauri_specta::Builder::<tauri::Wry>::new().typ::<MyStruct>();
+//! let mut builder = tauri_specta::Builder::<tauri::DynRuntime>::new().typ::<MyStruct>();
 //! ```
 //!
 //! ## Events
@@ -127,6 +129,7 @@
 //!         .events(collect_events![DemoEvent]);
 //!
 //! tauri::Builder::default()
+//!         .runtime(tauri_runtime_wry::Wry::default())
 //!         .invoke_handler(builder.invoke_handler())
 //!         .setup(move |app| {
 //!             // Ensure you mount your events!
@@ -238,7 +241,7 @@
 //! ```rust
 //! use tauri_specta::{Builder, Casing};
 //!
-//! let mut builder = Builder::<tauri::Wry>::new()
+//! let mut builder = Builder::<tauri::DynRuntime>::new()
 //!     // Keep the original Rust naming for command and event accessors.
 //!     .function_casing(Casing::SnakeCase);
 //! ```

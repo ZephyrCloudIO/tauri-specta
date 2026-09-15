@@ -50,6 +50,7 @@ pub enum ErrorHandlingMode {
 ///     .expect("Failed to export typescript bindings");
 ///
 /// tauri::Builder::default()
+///     .runtime(tauri_runtime_wry::Wry::default()) // < Required to select a webview runtime
 ///     .invoke_handler(builder.invoke_handler()) // < Required for commands to work
 ///     .setup(move |app| {
 ///         builder.mount_events(app); // < Required for events to work
@@ -78,6 +79,7 @@ pub enum ErrorHandlingMode {
 ///     .expect("Failed to export jsdoc bindings");
 ///
 /// tauri::Builder::default()
+///     .runtime(tauri_runtime_wry::Wry::default()) // < Required to select a webview runtime
 ///     .invoke_handler(builder.invoke_handler()) // < Required for commands to work
 ///     .setup(move |app| {
 ///         builder.mount_events(app); // < Required for events to work
@@ -171,7 +173,7 @@ impl<R: Runtime> Builder<R> {
     ///     format!("Hello, {my_name}! You've been greeted from Rust!")
     /// }
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().commands(collect_commands![hello_world]);
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().commands(collect_commands![hello_world]);
     /// ```
     pub fn commands(mut self, commands: Commands<R>) -> Self {
         self.cfg.commands = (commands.1)(&mut self.cfg.types);
@@ -195,7 +197,7 @@ impl<R: Runtime> Builder<R> {
     /// #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
     /// pub struct DemoEvent(String);
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().events(collect_events![DemoEvent]);
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().events(collect_events![DemoEvent]);
     /// ```
     pub fn events(mut self, events: Events) -> Self {
         self.cfg.events = events
@@ -222,7 +224,7 @@ impl<R: Runtime> Builder<R> {
     ///     a: String
     /// }
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().typ::<MyStruct>();
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().typ::<MyStruct>();
     /// ```
     pub fn typ<T: Type>(mut self) -> Self {
         self.cfg.types.register_mut::<T>();
@@ -239,7 +241,7 @@ impl<R: Runtime> Builder<R> {
     /// use tauri_specta::Builder;
     /// use specta::{Type, Types};
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().types(&Types::default());
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().types(&Types::default());
     /// ```
     pub fn types(mut self, types: &Types) -> Self {
         self.cfg.types.extend(types);
@@ -255,7 +257,7 @@ impl<R: Runtime> Builder<R> {
     /// ```rust
     /// use tauri_specta::Builder;
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().constant("CONSTANT_NAME","ANY_CONSTANT_VALUE");
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().constant("CONSTANT_NAME","ANY_CONSTANT_VALUE");
     /// ```
     #[track_caller]
     pub fn constant<T: Serialize>(mut self, k: impl Into<Cow<'static, str>>, v: T) -> Self {
@@ -288,7 +290,7 @@ impl<R: Runtime> Builder<R> {
     ///     }
     /// }"#;
     ///
-    /// Builder::<tauri::Wry>::default()
+    /// Builder::<tauri::DynRuntime>::default()
     ///  .typed_error_impl(TYPED_ERROR_IMPL);
     /// ```
     pub fn typed_error_impl(mut self, runtime: impl Into<Cow<'static, str>>) -> Self {
@@ -344,7 +346,7 @@ impl<R: Runtime> Builder<R> {
     /// ```rust
     /// use tauri_specta::{Builder, Casing};
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new().function_casing(Casing::SnakeCase);
+    /// let mut builder = Builder::<tauri::DynRuntime>::new().function_casing(Casing::SnakeCase);
     /// ```
     pub fn function_casing(mut self, casing: Casing) -> Self {
         self.cfg.function_casing = casing;
@@ -380,6 +382,7 @@ impl<R: Runtime> Builder<R> {
     /// let mut builder = Builder::new().events(collect_events![]);
     ///
     /// tauri::Builder::default()
+    ///     .runtime(tauri_runtime_wry::Wry::default())
     ///     .setup(move |app| {
     ///         builder.mount_events(app);
     ///
@@ -409,7 +412,7 @@ impl<R: Runtime> Builder<R> {
     /// use tauri_specta::{Builder, collect_commands, collect_events};
     /// use specta_typescript::Typescript;
     ///
-    /// let mut builder = Builder::<tauri::Wry>::new()
+    /// let mut builder = Builder::<tauri::DynRuntime>::new()
     ///     .commands(collect_commands![])
     ///     .events(collect_events![]);
     ///

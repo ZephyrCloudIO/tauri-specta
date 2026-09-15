@@ -31,7 +31,7 @@
 //!     // Update the user in your application state.
 //! }
 //!
-//! let commands = CommandSet::<tauri::Wry>::new(
+//! let commands = CommandSet::<tauri::DynRuntime>::new(
 //!     collect_commands![get_user],
 //!     collect_commands![rename_user],
 //! );
@@ -226,7 +226,7 @@ impl<R: Runtime> CommandSet<R> {
     /// use tauri_specta::{Casing, collect_commands};
     /// use tauri_specta_query::CommandSet;
     ///
-    /// let commands = CommandSet::<tauri::Wry>::new(
+    /// let commands = CommandSet::<tauri::DynRuntime>::new(
     ///     collect_commands![],
     ///     collect_commands![],
     /// )

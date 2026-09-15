@@ -27,14 +27,14 @@
 ///     }
 /// }
 ///
-/// let mut builder = Builder::<tauri::Wry>::new()
+/// let mut builder = Builder::<tauri::DynRuntime>::new()
 ///     .commands(collect_commands![
 ///         // You can pass a function name.
 ///         hello_world,
 ///         // You can also pass a module.
 ///         hello::world,
 ///         // Unlike `tauri::generate_handler` you may need to specify generics.
-///         generic_command::<tauri::Wry>
+///         generic_command::<tauri::DynRuntime>
 ///     ]);
 /// ```
 ///
@@ -75,7 +75,7 @@ macro_rules! collect_commands {
 ///     pub struct World(String);
 /// }
 ///
-/// let mut builder = Builder::<tauri::Wry>::new()
+/// let mut builder = Builder::<tauri::DynRuntime>::new()
 ///     .events(collect_events![
 ///         // You can pass a struct name.
 ///         MyEvent,

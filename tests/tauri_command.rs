@@ -77,6 +77,6 @@
 //     // collect_commands![hello_world];
 //     // collect_commands![hello_world,];
 //     // collect_commands![hello_world, goodbye_world];
-//     // collect_commands![generic::<tauri::Wry>];
-//     // collect_commands![generic::<tauri::Wry>,];
+//     // collect_commands![generic::<tauri::DynRuntime>];
+//     // collect_commands![generic::<tauri::DynRuntime>,];
 // }

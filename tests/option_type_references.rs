@@ -55,7 +55,7 @@ fn named_types_inside_options_are_referenced() {
         std::process::id()
     ));
 
-    Builder::<tauri::Wry>::new()
+    Builder::<tauri::DynRuntime>::new()
         .commands(collect_commands![
             bare,
             optional,

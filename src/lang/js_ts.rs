@@ -1506,7 +1506,7 @@ mod tests {
         let output_dir = std::path::Path::new("target/tests/reserved-runtime-names");
         let _ = fs::remove_dir_all(output_dir);
 
-        let renamed = Builder::<tauri::Wry>::new().typ::<Channel>();
+        let renamed = Builder::<tauri::DynRuntime>::new().typ::<Channel>();
         for (name, layout) in [
             ("flat", Layout::FlatFile),
             ("namespaces", Layout::Namespaces),
@@ -1539,7 +1539,7 @@ mod tests {
         );
 
         let inline_path = output_dir.join("inline.ts");
-        Builder::<tauri::Wry>::new()
+        Builder::<tauri::DynRuntime>::new()
             .typ::<inline::Channel>()
             .export(Typescript::default(), &inline_path)
             .expect("an inline type named Channel should not conflict with the runtime");
@@ -1549,13 +1549,13 @@ mod tests {
                 .contains("export type Channel")
         );
 
-        let err = Builder::<tauri::Wry>::new()
+        let err = Builder::<tauri::DynRuntime>::new()
             .typ::<unrenamed::Channel>()
             .export(Typescript::default(), output_dir.join("unrenamed.ts"))
             .expect_err("a flat export named Channel should conflict with the runtime");
         assert!(err.to_string().contains("User defined type 'Channel'"));
 
-        Builder::<tauri::Wry>::new()
+        Builder::<tauri::DynRuntime>::new()
             .typ::<unrenamed::Channel>()
             .export(JSDoc::default(), output_dir.join("unrenamed.js"))
             .expect_err("a flat JSDoc export named Channel should conflict with the runtime");
@@ -1565,13 +1565,13 @@ mod tests {
             ("unrenamed-module-prefixed", Layout::ModulePrefixedName),
             ("unrenamed-files", Layout::Files),
         ] {
-            Builder::<tauri::Wry>::new()
+            Builder::<tauri::DynRuntime>::new()
                 .typ::<unrenamed::Channel>()
                 .export(Typescript::default().layout(layout), output_dir.join(name))
                 .expect("a scoped Channel should not conflict with the runtime");
         }
 
-        Builder::<tauri::Wry>::new()
+        Builder::<tauri::DynRuntime>::new()
             .typ::<unrenamed::Channel>()
             .export(
                 JSDoc::default().layout(Layout::ModulePrefixedName),
@@ -1579,7 +1579,7 @@ mod tests {
             )
             .expect_err("JSDoc module-prefixed typedefs should retain their bare names");
 
-        Builder::<tauri::Wry>::new()
+        Builder::<tauri::DynRuntime>::new()
             .typ::<unrenamed::Channel>()
             .export(
                 JSDoc::default().layout(Layout::Files),
@@ -1598,7 +1598,7 @@ mod tests {
         ));
         fs::create_dir_all(&output_dir).expect("failed to create test output directory");
 
-        let builder = Builder::<tauri::Wry>::new()
+        let builder = Builder::<tauri::DynRuntime>::new()
             .commands(collect_commands![nullable_result])
             .error_handling(ErrorHandlingMode::DataError);
 
@@ -1633,23 +1633,23 @@ mod tests {
         for (name, builder) in [
             (
                 "unit",
-                Builder::<tauri::Wry>::new().commands(collect_commands![nullable_error]),
+                Builder::<tauri::DynRuntime>::new().commands(collect_commands![nullable_error]),
             ),
             (
                 "unit-struct",
-                Builder::<tauri::Wry>::new().commands(collect_commands![unit_struct_error]),
+                Builder::<tauri::DynRuntime>::new().commands(collect_commands![unit_struct_error]),
             ),
             (
                 "generic-unit",
-                Builder::<tauri::Wry>::new().commands(collect_commands![generic_nullable_error]),
+                Builder::<tauri::DynRuntime>::new().commands(collect_commands![generic_nullable_error]),
             ),
             (
                 "untagged-unit",
-                Builder::<tauri::Wry>::new().commands(collect_commands![untagged_nullable_error]),
+                Builder::<tauri::DynRuntime>::new().commands(collect_commands![untagged_nullable_error]),
             ),
             (
                 "floating-point",
-                Builder::<tauri::Wry>::new().commands(collect_commands![floating_point_error]),
+                Builder::<tauri::DynRuntime>::new().commands(collect_commands![floating_point_error]),
             ),
         ] {
             let output_path = std::env::temp_dir().join(format!(
@@ -1682,7 +1682,7 @@ mod tests {
             "tauri-specta-nullable-semantic-error-test-{}.ts",
             std::process::id()
         ));
-        let err = Builder::<tauri::Wry>::new()
+        let err = Builder::<tauri::DynRuntime>::new()
             .commands(collect_commands![semantic_nullable_error])
             .semantic_types(semantic_types)
             .error_handling(ErrorHandlingMode::DataError)
@@ -1699,7 +1699,7 @@ mod tests {
             std::env::temp_dir().join(format!("tauri-specta-sections-test-{}", std::process::id()));
         fs::create_dir_all(&output_dir).expect("failed to create test output directory");
 
-        let builder = Builder::<tauri::Wry>::new()
+        let builder = Builder::<tauri::DynRuntime>::new()
             .commands(collect_commands![sectioned_command])
             .constant("SECTIONS_TEST_CONSTANT", 1);
 

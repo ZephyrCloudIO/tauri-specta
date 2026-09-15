@@ -164,7 +164,7 @@ pub struct Testing {
 
 #[allow(deprecated)]
 fn main() {
-    let builder = Builder::<tauri::Wry>::new()
+    let builder = Builder::<tauri::DynRuntime>::new()
         // This enables `Date`, `Uint8Array`, and `URL` for supported types.
         .semantic_types(semantic::Configuration::default())
         // This can be used if you don't want per-phase (Serialize/Deserialize) types.
@@ -175,7 +175,7 @@ fn main() {
             async_hello_world,
             has_error,
             nested::some_struct,
-            generic::<tauri::Wry>,
+            generic::<tauri::DynRuntime>,
             deprecated,
             with_channel,
             phase_specific_rename,
@@ -232,6 +232,7 @@ fn main() {
 
     #[cfg(debug_assertions)]
     tauri::Builder::default()
+        .runtime(tauri_runtime_wry::Wry::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
